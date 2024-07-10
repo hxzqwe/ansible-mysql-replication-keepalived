@@ -1,0 +1,41 @@
+#- name: Install epel
+#  yum:
+#    name:
+#      - epel-release
+#  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
+
+- name: Install pip
+  yum:
+    name:
+      - python-pip
+    update_cache: yes
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
+
+- name: Install pexpect
+  pip:
+    name: pexpect
+    executable: pip
+    extra_args: -i  http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+
+- name: "检查安全管理MySQL凭证是否存在"
+  shell: "{{ mysql_install_path }}/mysql/bin/mysql_config_editor print --login-path=local"
+  register: result
+
+#判断result的值是否为空，为空则配置安全管理MySQL凭证，反之不配置安全管理MySQL凭证
+- name: "打印检查结果"
+  debug:
+    msg: "已配置安全管理MySQL凭证"
+  when: result.stdout != ""
+
+- name: "打印检查结果"
+  debug:
+    msg: "还没有配置安全管理MySQL凭证"
+  when: result.stdout == ""
+
+- name: "开始配置安全管理MySQL凭证"
+  expect:
+    command: "{{ mysql_install_path }}/mysql/bin/mysql_config_editor set --login-path=local --host=localhost --user=root --socket={{ mysql_sock }} --password"
+    responses:
+      "Enter password:": "{{ mysql_root_passwd }}"
+  no_log: true
+  when: result.stdout == ""

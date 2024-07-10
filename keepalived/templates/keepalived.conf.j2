@@ -1,0 +1,38 @@
+! Configuration File for keepalived
+global_defs {
+    router_id MySQL-HA
+    script_user root
+    enable_script_security
+} 
+
+vrrp_script check_run {
+    script "/etc/keepalived/mycheck.sh"
+    interval 10
+}
+
+vrrp_instance VI_1 {
+{% if master is defined %}
+    state MASTER
+    priority 100
+{% elif slave is defined %}
+    state MASTER
+    priority 90
+{% endif %}
+    interface {{ interface }}
+    virtual_router_id 51
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1234
+    }
+    track_script {
+        check_run
+    }
+    notify_master /etc/keepalived/mymaster.sh
+    notify_backup /etc/keepalived/mybackup.sh
+    notify_stop /etc/keepalived/mystop.sh
+
+    virtual_ipaddress {
+        {{ vip }}
+    }  
+}

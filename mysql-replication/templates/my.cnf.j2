@@ -1,0 +1,17 @@
+[mysqld]
+basedir={{ mysql_install_path }}/mysql
+datadir={{ data_path }}/mysql
+socket={{ mysql_sock }}
+log_error={{ data_path }}/mysql/{{ log_error }}
+pid-file={{ data_path }}/mysql/mysql.pid
+port={{ mysql_port }}
+log-bin=mysql-bin
+
+# 设置主节点server-id=1，模式为读写；从节点server-id=2,模式为只读
+{% if master is defined %}
+server-id=1
+#read-only=0
+{% else %}
+server-id=2
+#read-only=1
+{% endif %}

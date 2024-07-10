@@ -1,0 +1,8 @@
+# mysql
+mysql_install_path: /usr/local
+master_ip: 10.1.58.181
+slave_ip: 10.1.58.182
+
+# keepalived
+interface: eth0
+vip: 10.1.58.180

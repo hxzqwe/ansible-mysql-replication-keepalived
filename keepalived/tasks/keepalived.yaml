@@ -1,0 +1,61 @@
+- name: "1、安装keepalived"
+  yum:
+    name: keepalived
+    state: present
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
+
+- name: "2、生成配置文件"
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+
+- name: "3、生成mysql凭证环境变量脚本"
+  template:
+    src: mysqlenv.j2
+    dest: /etc/keepalived/.mysqlenv
+    owner: root
+    group: root
+
+- name: "4.复制 mycheck.sh 脚本"
+  copy:
+    src: mycheck.sh
+    dest: /etc/keepalived/mycheck.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "5.复制 mymaster.sh 脚本"
+  copy:
+    src: mymaster.sh
+    dest: /etc/keepalived/mymaster.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "6.复制 mybackup.sh 脚本"
+  copy:
+    src: mybackup.sh
+    dest: /etc/keepalived/mybackup.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "7.复制 mystop.sh 脚本"
+  copy:
+    src: mystop.sh
+    dest: /etc/keepalived/mystop.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "8、建立logs目录和syncposfile目录"
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+  with_items:
+    - /etc/keepalived/logs
+    - /etc/keepalived/syncposfile
+
+- name: "9、启动keepalved服务"
+  shell: /usr/sbin/keepalived

@@ -1,0 +1,4 @@
+- include: conf_yum.yaml
+- include: replication.yaml
+- include: conf_env.yaml
+- include: conf_auth.yaml

@@ -1,0 +1,13 @@
+#mysql_pkg: mysql-5.7.42-linux-glibc2.12-x86_64.tar.gz
+mysql_version: mysql-5.7.42-linux-glibc2.12-x86_64
+mysql_install_path: /usr/local
+data_path: /data
+mysql_sock: /data/mysql/mysql.sock
+mysql_port: 3306
+mysql_root_passwd: 123456
+repl_user: replication
+repl_passwd: replication
+log_error: mysql.log
+
+master_ip: 10.1.58.181
+#slave_ip: 10.1.75.12

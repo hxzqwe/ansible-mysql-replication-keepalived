@@ -1,0 +1,50 @@
+- name: Config base repositories
+  yum_repository:
+    name: base
+    description: CentOS-$releasever - Base
+    file: CentOS-Base
+    baseurl: http://mirrors.ustc.edu.cn/centos-vault/centos/$releasever/os/$basearch/
+    enabled: yes
+    gpgcheck: no
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int == 7
+
+- name: Config updates repositories
+  yum_repository:
+    name: updates
+    description: CentOS-$releasever - Updates
+    file: CentOS-Base
+    baseurl: http://mirrors.ustc.edu.cn/centos-vault/centos/$releasever/updates/$basearch/
+    enabled: yes
+    gpgcheck: no
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int == 7
+
+- name: Config extras repositories
+  yum_repository:
+    name: extras
+    description: CentOS-$releasever - Extras
+    file: CentOS-Base
+    baseurl: http://mirrors.ustc.edu.cn/centos-vault/centos/$releasever/extras/$basearch/
+    enabled: yes
+    gpgcheck: no
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int == 7
+
+- name: Config centosplus repositories
+  yum_repository:
+    name: centosplus
+    description: CentOS-$releasever - Plus
+    file: CentOS-Base
+    baseurl: http://mirrors.ustc.edu.cn/centos-vault/centos/$releasever/centosplus/$basearch/
+    enabled: no
+    gpgcheck: no
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int == 7
+
+- name: Add epel repositories
+  yum_repository:
+    name: epel
+    description: Extra Packages for Enterprise Linux 7 - $basearc
+    file: epel
+    baseurl: http://mirrors.ustc.edu.cn/epel/7/$basearch
+    failovermethod: priority
+    enabled: yes
+    gpgcheck: no
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int == 7

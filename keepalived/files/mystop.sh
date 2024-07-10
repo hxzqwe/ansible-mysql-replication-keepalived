@@ -1,0 +1,44 @@
+#!/bin/sh
+
+##################################################
+#File Name  : mystop.sh
+#Description: Set parameters to ensure that the data
+#             is not lost, and finally check to see
+#             if there are still write operations,
+#             the last 1 minutes to exit
+
+##################################################
+
+BASEPATH=/etc/keepalived
+LOGSPATH=$BASEPATH/logs
+source $BASEPATH/.mysqlenv
+
+$mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'replication'@'%' IDENTIFIED BY 'replication';flush privileges;"
+$mysql -e "set global innodb_support_xa=1;"
+$mysql -e "set global sync_binlog=1;"
+$mysql -e "set global innodb_flush_log_at_trx_commit=1;"
+$mysql -e "show master status\G" > $LOGSPATH/mysqlmaster0.states
+M_File1=`cat $LOGSPATH/mysqlmaster0.states | awk -F': ' '/File/{print $2}'`
+M_Position1=`cat $LOGSPATH/mysqlmaster0.states | awk -F': ' '/Position/{print $2}'`
+sleep 2
+$mysql -e "show master status\G" > $LOGSPATH/mysqlmaster1.states
+M_File2=`cat $LOGSPATH/mysqlmaster1.states | awk -F': ' '/File/{print $2}'`
+M_Position2=`cat $LOGSPATH/mysqlmaster1.states | awk -F': ' '/Position/{print $2}'`
+
+i=1
+
+while true
+do
+    if [ $M_File1 = $M_File2 ] && [ $M_Position1 -eq $M_Position2 ];then
+        echo "$(date "+%Y-%m-%d %H:%M:%S") The mystop.sh, master sync ok.." >> $LOGSPATH/mysql_switch.log
+        exit 0
+    else
+        sleep 1
+        if [$i -gt 60 ];then
+            break
+        fi
+        continue
+        let i++
+    fi
+done
+echo "$(date "+%Y-%m-%d %H:%M:%S") The mystop.sh, master sync exceed one minutes..." >> $LOGSPATH/mysql_switch.log

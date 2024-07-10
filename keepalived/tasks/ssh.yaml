@@ -1,0 +1,41 @@
+- name: Generate SSH key pair
+  openssh_keypair:
+    path: /tmp/id_rsa
+  delegate_to: localhost
+
+- name: Set authorized key took from file
+  authorized_key:
+    key: "{{ lookup('file', '/tmp/id_rsa.pub') }}"  #tmp目录的生成的公钥地址
+    user: root                                      #被控制的远程服务上的用户名
+    state: present                                  #模式为添加公钥，absent为移除秘钥
+
+- name: copy id_rsa
+  copy:
+    src: /tmp/id_rsa
+    dest: /root/.ssh/id_rsa
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: copy id_rsa.pub
+  copy:
+    src: /tmp/id_rsa.pub
+    dest: /root/.ssh/id_rsa.pub
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "生成hostkey到known_hosts配置"
+  shell: ssh -o StrictHostKeyChecking=no "{{ item }}" -o UserKnownHostsFile=/tmp/known_hosts "hostname"
+  with_items:
+    - "{{ master_ip }}"
+    - "{{ slave_ip }}"
+  delegate_to: localhost
+  
+- name: "复制known_hosts配置"
+  copy:
+    src: /tmp/known_hosts
+    dest: /root/.ssh/known_hosts
+    owner: root
+    group: root
+    mode: '0644'

@@ -1,0 +1,47 @@
+#!/bin/sh
+
+##################################################
+#File Name  : mymaster.sh
+#Description: First determine whether synchronous
+#             replication is performed, and if no
+#             execution is completed, wait for 1
+#             minutes. Log logs and POS after
+#             switching, and record files synchronously.
+##################################################
+
+BASEPATH=/etc/keepalived
+LOGSPATH=$BASEPATH/logs
+source $BASEPATH/.mysqlenv
+
+$mysql -e "show slave status\G" > $LOGSPATH/mysqlslave.states
+Master_Log_File=`cat $LOGSPATH/mysqlslave.states | grep -w Master_Log_File | awk -F": " '{print $2}'`
+Relay_Master_Log_File=`cat $LOGSPATH/mysqlslave.states | grep -w Relay_Master_Log_File | awk -F": " '{print $2}'`
+Read_Master_Log_Pos=`cat $LOGSPATH/mysqlslave.states | grep -w Read_Master_Log_Pos | awk -F": " '{print $2}'`
+Exec_Master_Log_Pos=`cat $LOGSPATH/mysqlslave.states | grep -w Exec_Master_Log_Pos | awk -F": " '{print $2}'`
+i=1
+
+while true
+do
+    if [ $Master_Log_File = $Relay_Master_Log_File ] && [ $Read_Master_Log_Pos -eq $Exec_Master_Log_Pos ];then
+        echo "$(date "+%Y-%m-%d %H:%M:%S") The mymaster.sh, slave sync ok... " >> $LOGSPATH/mysql_switch.log
+        break
+    else
+        sleep 1
+        if [ $i -gt 60 ];then
+            break
+        fi
+        continue
+        let i++
+    fi
+done
+
+$mysql -e "stop slave;"
+$mysql -e "set global innodb_support_xa=0;"
+$mysql -e "set global sync_binlog=0;"
+$mysql -e "set global innodb_flush_log_at_trx_commit=0;"
+$mysql -e "flush logs;GRANT ALL PRIVILEGES ON *.* TO 'replication'@'%' IDENTIFIED BY 'replication';flush privileges;"
+$mysql -e "show master status;" > $LOGSPATH/master_status_$(date "+%y%m%d-%H%M").txt
+
+# sync pos file
+/usr/bin/scp $LOGSPATH/master_status_$(date "+%y%m%d-%H%M").txt root@$REMOTE_IP:$BASEPATH/syncposfile/backup_master.status
+echo "$(date "+%Y-%m-%d %H:%M:%S") The mymaster.sh, Sync pos file sucess." >> $LOGSPATH/mysql_switch.log

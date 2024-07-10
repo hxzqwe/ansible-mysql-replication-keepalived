@@ -1,0 +1,9 @@
+MYSQL={{ mysql_install_path }}/mysql/bin/mysql
+MYSQL_CMD="--login-path=local"
+
+{% if master is defined %}
+REMOTE_IP={{ slave_ip }}
+{% elif slave is defined %}
+REMOTE_IP={{ master_ip }}
+{% endif %}
+export mysql="$MYSQL $MYSQL_CMD "

@@ -1,0 +1,167 @@
+- name: "下载mysql二进制安装包"
+  get_url:
+    validate_certs: no
+    url: "https://cdn.mysql.com/archives/mysql-5.7/{{ mysql_version }}.tar.gz"
+    dest: "{{ role_path }}/files/{{ mysql_version }}.tar.gz"
+    mode: 0644
+    force: no
+  delegate_to: localhost
+
+- name: "安装依赖软件包"
+  yum:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+    - libaio
+    - MySQL-python
+    - chrony
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
+
+- name: "启动时间同步服务"
+  service: name=chronyd state=started enabled=yes
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7
+
+- name: "创建mysql组"
+  group:
+    name: mysql
+ 
+- name: "创建mysql用户"
+  user:
+    name: mysql
+    shell: /sbin/nologin
+    create_home: no
+    group: mysql
+
+- name: "解压mysql二进制包"
+  unarchive:
+    src:  "{{ mysql_version }}.tar.gz"
+    dest: "{{ mysql_install_path }}"
+    owner: mysql
+    group: mysql
+
+- name: "建立mysql数据文件目录"
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    recurse: yes
+  with_items:
+    - "{{ data_path }}/mysql"
+
+- name: "创建mysql应用目录软连接"
+  file:
+    src: "{{ mysql_install_path }}/{{ mysql_version }}"
+    dest: "{{ mysql_install_path }}/mysql"
+    owner: mysql
+    group: mysql
+    state: link
+
+- name: "生成mysql配置文件"
+  template:
+    src: my.cnf.j2
+    dest: "{{ mysql_install_path }}/mysql/my.cnf"
+
+- name: "初始化数据库并设置初始化不会生出临时密码"
+  shell: ./mysqld --initialize --initialize-insecure --user=mysql --basedir={{ mysql_install_path }}/mysql/ --datadir={{ data_path }}/mysql/
+  args:
+    chdir: "{{ mysql_install_path }}/mysql/bin"
+
+- name: "配置systemd守护进程"
+  template:
+    src: mysqld.service.j2
+    dest: /usr/lib/systemd/system/mysqld.service
+ 
+- name: "启动mysql服务"
+  systemd:
+    name: mysqld
+    state: started
+    daemon_reload: yes
+    enabled: yes
+
+- name: "设置mysql管理员root用户密码"
+  mysql_user: 
+    login_host: localhost
+    login_port: "{{ mysql_port }}"
+    login_user: root
+    login_unix_socket: "{{ mysql_sock }}" 
+    #login_password: "{{ mysql_root_passwd }}"
+    name: root
+    host: localhost
+    password: "{{ mysql_root_passwd }}"
+    state: present 
+
+- name: "创建{{ repl_user }}同步用户"
+  mysql_user: 
+    login_host: localhost
+    login_port: "{{ mysql_port }}"
+    login_user: root
+    login_unix_socket: "{{ mysql_sock }}" 
+    login_password: "{{ mysql_root_passwd }}"
+    name: "{{ repl_user }}"
+    password: "{{ repl_passwd }}"
+    priv: "*.*:ALL"
+    state: present 
+    host: "%"
+  when: master is defined
+
+- name: "获取主服务器状态并记录下Binlog文件名和位置点"
+  mysql_replication:
+    login_unix_socket: "{{ mysql_sock }}"
+    login_host: localhost
+    login_port: "{{ mysql_port }}"
+    login_user: root     
+    login_password: "{{ mysql_root_passwd }}"
+    mode: getmaster
+  register: binlog_status
+  delegate_to: "{{ master_ip }}"    # 用于将任务委托给mysql主服务器执行，目的为了在slave端获取到binlog_status变量
+  when: slave is defined
+
+- name: "打印主服务器状态并记录下Binlog文件名和位置点"
+  debug:
+    msg: "{{ binlog_status.File }}:{{ binlog_status.Position }}"
+  when: slave is defined
+
+- name: "从库配置从主库同步"
+  mysql_replication:
+    login_unix_socket: "{{ mysql_sock }}"
+    login_host: localhost
+    login_port: "{{ mysql_port }}"
+    login_user: root     
+    login_password: "{{ mysql_root_passwd }}"
+    master_host: "{{ master_ip }}" 
+    master_user: "{{ repl_user }}" 
+    master_password: "{{ repl_passwd }}"
+    master_port: "{{ mysql_port }}"
+    master_log_file: "{{ binlog_status.File }}"
+    master_log_pos: "{{ binlog_status.Position }}"
+    mode: changemaster
+  when: slave is defined
+
+- name: "Start Slave"
+  mysql_replication: 
+    login_unix_socket: "{{ mysql_sock }}"
+    login_user: root 
+    login_host: localhost
+    login_port: "{{ mysql_port }}"
+    login_password: "{{ mysql_root_passwd }}"
+    mode: startslave
+  when: slave is defined
+
+- name: "注册复制状态"
+  mysql_replication:
+    login_host: localhost
+    login_user: root
+    login_port: "{{ mysql_port }}"
+    login_password: "{{ mysql_root_passwd }}"
+    login_unix_socket: "{{ mysql_sock }}"
+    mode: getslave
+  when: slave is defined
+  register: info
+
+- name: "打印复制状态信息"
+  debug:
+    msg: "Slave_IO_Running={{ info.Slave_IO_Running }}       Slave_SQL_Running={{ info.Slave_SQL_Running }}"
+  when: slave is defined
