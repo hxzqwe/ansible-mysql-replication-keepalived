@@ -17,7 +17,7 @@
 
 网络拓扑
 
-![ansible-mysql-replication-keepalived](\images\ansible-mysql-replication-keepalived.jpg)
+![ansible-mysql-replication-keepalived](images\ansible-mysql-replication-keepalived.jpg)
 
 
 
