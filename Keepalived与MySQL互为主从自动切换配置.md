@@ -15,9 +15,9 @@
 | 10.1.58.191<br />VIP 10.1.58.190 | mysql-master | mysql-master + keepalived |
 | 10.1.58.192<br />VIP 10.1.58.190 | mysql-slave  | mysql-slave + keepalived  |
 
-网络拓扑(待更新)
+网络拓扑
 
-
+![ansible-mysql-replication-keepalived](\images\ansible-mysql-replication-keepalived.jpg)
 
 
 
@@ -891,14 +891,6 @@ mysql --login-path=local -S /data/mysql/mysql.sock -e 'show slave status\G'
              Slave_IO_Running: Yes
             Slave_SQL_Running: Yes
 ```
-
-
-
-# Ansible Playbook快速部署一主多从MySQL集群
-
-https://blog.csdn.net/qq_39787367/article/details/132187251
-
-
 
 
 
