@@ -11,13 +11,13 @@
 
 ## 使用说明
 
-下载本项目到ansible服务器
+### 下载本项目到ansible服务器
 
 ```bash
 git clone https://github.com/hxzqwe/ansible-mysql-replication-keepalived.git
 ```
 
-修改hosts.yaml配置文件
+### 修改hosts.yaml配置文件
 
 ```yaml
 [mysql]
@@ -27,7 +27,7 @@ git clone https://github.com/hxzqwe/ansible-mysql-replication-keepalived.git
 
 > **修改被控端mysql主服务和mysql从服务器的ip**
 
-修改vars.yaml配置文件
+### 修改vars.yaml配置文件
 
 ```yaml
 # mysql
@@ -52,10 +52,32 @@ vip: 10.1.75.10
 
 > **根据自己实际情况修改以上的配置，如：数据库管理员密码、ip地址、网卡名等**
 
-开始部署
+### 开始部署
+
+方式一：使用常规安装好的ansible软件部署该项目
 
 ```bash
 cd ansible-mysql-replication-keepalived
-ansible-playbook -i hosts playbook.yaml
+ansible-playbook -i hosts playbook.yaml --ssh-extra-args '-o StrictHostKeyChecking=no'
 ```
+
+方式二：使用docker运行ansible容器部署该项目
+
+> 使用的ansible镜像的github源码 https://github.com/devture/docker-ansible
+
+```bash
+# 切换目录
+cd ansible-mysql-replication-keepalived
+
+# 使用docker运行ansible容器部署该项目
+docker run --rm \
+--network host \
+-w /work \
+-v `pwd`:/work \
+-v  /root/.ssh/id_rsa:/root/.ssh/id_rsa:ro \
+devture/ansible:2.14.5-r0-0 \
+ansible-playbook -i hosts playbook.yaml --ssh-extra-args '-o StrictHostKeyChecking=no'
+```
+
+
 
