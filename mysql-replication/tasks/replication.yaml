@@ -157,7 +157,7 @@
     login_port: "{{ mysql_port }}"
     login_password: "{{ mysql_root_passwd }}"
     login_unix_socket: "{{ mysql_sock }}"
-    mode: getslave
+    mode: getreplica
   when: slave is defined
   register: info
 
