@@ -75,7 +75,7 @@ docker run --rm \
 -w /work \
 -v `pwd`:/work \
 -v  /root/.ssh/id_rsa:/root/.ssh/id_rsa:ro \
-devture/ansible:2.14.5-r0-0 \
+devture/ansible:2.13.6-r0-3 \
 ansible-playbook -i hosts playbook.yaml --ssh-extra-args '-o StrictHostKeyChecking=no'
 ```
 
