@@ -114,7 +114,7 @@
     login_port: "{{ mysql_port }}"
     login_user: root     
     login_password: "{{ mysql_root_passwd }}"
-    mode: getmaster
+    mode: getprimary
   register: binlog_status
   delegate_to: "{{ master_ip }}"    # 用于将任务委托给mysql主服务器执行，目的为了在slave端获取到binlog_status变量
   when: slave is defined
@@ -137,7 +137,7 @@
     master_port: "{{ mysql_port }}"
     master_log_file: "{{ binlog_status.File }}"
     master_log_pos: "{{ binlog_status.Position }}"
-    mode: changemaster
+    mode: changeprimary
   when: slave is defined
 
 - name: "Start Slave"
@@ -147,7 +147,7 @@
     login_host: localhost
     login_port: "{{ mysql_port }}"
     login_password: "{{ mysql_root_passwd }}"
-    mode: startslave
+    mode: startreplica
   when: slave is defined
 
 - name: "注册复制状态"
