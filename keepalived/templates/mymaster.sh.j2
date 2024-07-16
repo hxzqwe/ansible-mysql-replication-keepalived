@@ -12,6 +12,8 @@
 BASEPATH=/etc/keepalived
 LOGSPATH=$BASEPATH/logs
 source $BASEPATH/.mysqlenv
+REPL_USER={{ repl_user }}
+REPL_PASSWD={{ repl_passwd }}
 
 $mysql -e "show slave status\G" > $LOGSPATH/mysqlslave.states
 Master_Log_File=`cat $LOGSPATH/mysqlslave.states | grep -w Master_Log_File | awk -F": " '{print $2}'`
@@ -39,7 +41,7 @@ $mysql -e "stop slave;"
 $mysql -e "set global innodb_support_xa=0;"
 $mysql -e "set global sync_binlog=0;"
 $mysql -e "set global innodb_flush_log_at_trx_commit=0;"
-$mysql -e "flush logs;GRANT ALL PRIVILEGES ON *.* TO 'replication'@'%' IDENTIFIED BY 'replication';flush privileges;"
+$mysql -e "flush logs;GRANT ALL PRIVILEGES ON *.* TO '$REPL_USER'@'%' IDENTIFIED BY '$REPL_PASSWD';flush privileges;"
 $mysql -e "show master status;" > $LOGSPATH/master_status_$(date "+%y%m%d-%H%M").txt
 
 # sync pos file

@@ -25,24 +25,24 @@
     mode: '0755'
 
 - name: "5.复制 mymaster.sh 脚本"
-  copy:
-    src: mymaster.sh
+  template:
+    src: mymaster.sh.j2
     dest: /etc/keepalived/mymaster.sh
     owner: root
     group: root
     mode: '0755'
 
 - name: "6.复制 mybackup.sh 脚本"
-  copy:
-    src: mybackup.sh
+  template:
+    src: mybackup.sh.j2
     dest: /etc/keepalived/mybackup.sh
     owner: root
     group: root
     mode: '0755'
 
 - name: "7.复制 mystop.sh 脚本"
-  copy:
-    src: mystop.sh
+  template:
+    src: mystop.sh.j2
     dest: /etc/keepalived/mystop.sh
     owner: root
     group: root
